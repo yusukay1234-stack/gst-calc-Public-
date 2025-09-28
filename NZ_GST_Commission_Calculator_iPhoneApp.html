@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GST & Commission — Salon Pro</title>
+
+<!-- iPhone app-like -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Crect width='100%25' height='100%25' rx='48' ry='48' fill='%23000'/%3E%3Ctext x='50%25' y='56%25' dominant-baseline='middle' text-anchor='middle' font-size='120' fill='%23fff' font-family='Arial,Helvetica,sans-serif'%3EG%3C/text%3E%3C/svg%3E">
+
+<style>
+  :root { --pad: 14px; --radius: 14px; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f6f6f7; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 18px; }
+  .card { background: #fff; border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,.06); border: 1px solid #e7e7ea; }
+  .head { padding: 16px var(--pad); border-bottom: 1px solid #eee; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  h1 { font-size: 18px; margin: 0; }
+  .muted { color: #666; font-size: 13px; }
+  .controls { padding: 10px var(--pad); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .controls input, .controls select, .controls button { padding: 10px 12px; font-size: 16px; border: 1px solid #d8d8dd; border-radius: 10px; background:#fff; }
+  .controls button { background:#fff; }
+  .controls button.primary { background:#111; color:#fff; border-color:#111; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 12px; border-bottom: 1px solid #eee; }
+  th { background: #fafafa; text-align: left; font-size: 14px; }
+  td { font-size: 16px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .row-actions { text-align: center; }
+  .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#f1f1f4; font-size:12px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 10px; padding: 12px var(--pad) 18px; }
+  .tile { background:#fff; border:1px solid #eee; border-radius: 12px; padding: 12px; }
+  .tile h3 { margin: 0 0 6px; font-size: 13px; color:#444; }
+  .tile .val { font-size: 20px; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight:700; }
+  .note { padding: 8px var(--pad) 16px; color:#666; font-size: 13px; }
+  .install-tip { padding: 10px var(--pad); background:#fffbe6; border-top:1px solid #f0e6b7; font-size:13px; }
+  .right { text-align:right; }
+  .select, .input { width:100%; }
+  .center { text-align:center; }
+  @media (hover:hover) {
+    .controls button:hover { background:#f3f3f6; }
+    .controls button.primary:hover { filter:brightness(1.05); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <div>
+          <h1>NZ GST & Commission Calculator — Salon Pro</h1>
+          <div class="muted">Service 40% / Model 20% / Retail 10%（GSTはデフォルト15%）</div>
+        </div>
+        <div class="muted">iPhoneは「共有 → ホーム画面に追加」でアプリ化できます</div>
+      </div>
+
+      <div class="controls">
+        <label>GST率(%) <input id="gst" class="input" type="number" inputmode="decimal" value="15"></label>
+        <div class="pill">Incl. GST を入力 → 自動計算</div>
+        <button id="add" class="primary">＋ 行を追加</button>
+        <button id="sample">サンプル3件</button>
+        <button id="clear">全クリア</button>
+        <button id="export">CSVエクスポート</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th style="min-width:120px;">カテゴリ</th>
+              <th class="num" style="min-width:140px;">Incl. GST ($)</th>
+              <th class="num" style="min-width:140px;">Excl. GST ($)</th>
+              <th class="num" style="min-width:120px;">GST ($)</th>
+              <th class="center" style="min-width:110px;">歩合率</th>
+              <th class="num" style="min-width:150px;">歩合金額 ($)</th>
+              <th class="center" style="min-width:90px;">削除</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td class="right"><strong>合計</strong></td>
+              <td class="num" id="t_incl">$0.00</td>
+              <td class="num" id="t_excl">$0.00</td>
+              <td class="num" id="t_gst">$0.00</td>
+              <td></td>
+              <td class="num" id="t_comm">$0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="grid">
+        <div class="tile"><h3>Service（40%）歩合合計</h3><div class="val" id="sum_service">$0.00</div></div>
+        <div class="tile"><h3>Model（20%）歩合合計</h3><div class="val" id="sum_model">$0.00</div></div>
+        <div class="tile"><h3>Retail（10%）歩合合計</h3><div class="val" id="sum_retail">$0.00</div></div>
+        <div class="tile"><h3>歩合金額 合計</h3><div class="val" id="sum_all_comm">$0.00</div></div>
+      </div>
+
+      <div class="install-tip">
+        ▼ アプリ化するには：Safariの下部<b>共有</b> → <b>ホーム画面に追加</b> → アイコンがホームに追加されます
+      </div>
+
+      <div class="note">
+        ・カテゴリで自動歩合：Service=40%、Model=20%、Retail=10%（いずれもGST抜きに対して計算）。<br>
+        ・金額は半角数字で。$やカンマは不要です。<br>
+        ・入力内容は自動保存され、次回開いたときに復元されます（この端末/ブラウザのみ）。
+      </div>
+    </div>
+  </div>
+
+<script>
+const tblBody = document.querySelector("#tbl tbody");
+const gstInput = document.getElementById("gst");
+const KEY = "gst_commission_rows_v2";
+const KEY_GST = "gst_rate_v2";
+
+function fmt(n){ return !isFinite(n) ? "$0.00" : "$"+n.toFixed(2); }
+function numFromText(t){ return parseFloat((t||"").replace(/[^0-9.\-]/g,"")) || 0; }
+
+function rateFor(cat){
+  switch ((cat||"").toLowerCase()){
+    case "service": return 0.40;
+    case "model": return 0.20;
+    case "retail": return 0.10;
+    default: return 0;
+  }
+}
+
+function recalcRow(tr){
+  const inclEl = tr.querySelector(".incl");
+  const exclEl = tr.querySelector(".excl");
+  const gstEl  = tr.querySelector(".gst");
+  const rateEl = tr.querySelector(".rate");
+  const commEl = tr.querySelector(".comm");
+  const catEl  = tr.querySelector(".cat");
+
+  const incl = parseFloat(inclEl.value);
+  let gstPct = parseFloat(gstInput.value);
+  if (!isFinite(gstPct) || gstPct <= 0) gstPct = 15;
+
+  const rate = rateFor(catEl.value);
+  rateEl.textContent = rate ? (rate*100).toFixed(0) + "%" : "-";
+
+  if (isFinite(incl) && incl > 0){
+    const factor = 1 + gstPct/100.0;
+    const excl = incl / factor;
+    const gst  = incl - excl;
+    const comm = excl * rate;
+
+    exclEl.textContent = fmt(excl);
+    gstEl.textContent  = fmt(gst);
+    commEl.textContent = fmt(comm);
+  } else {
+    exclEl.textContent = "$0.00";
+    gstEl.textContent  = "$0.00";
+    commEl.textContent = "$0.00";
+  }
+
+  recalcTotals();
+  saveState();
+}
+
+function recalcTotals(){
+  let tIncl=0, tExcl=0, tGst=0, tComm=0;
+  let sService=0, sModel=0, sRetail=0;
+
+  tblBody.querySelectorAll("tr").forEach(tr => {
+    const incl = parseFloat(tr.querySelector(".incl").value) || 0;
+    const excl = numFromText(tr.querySelector(".excl").textContent);
+    const gst  = numFromText(tr.querySelector(".gst").textContent);
+    const comm = numFromText(tr.querySelector(".comm").textContent);
+    const cat  = (tr.querySelector(".cat").value || "").toLowerCase();
+
+    tIncl += incl; tExcl += excl; tGst += gst; tComm += comm;
+    if (cat==="service") sService += comm;
+    else if (cat==="model") sModel += comm;
+    else if (cat==="retail") sRetail += comm;
+  });
+
+  document.getElementById("t_incl").textContent = fmt(tIncl);
+  document.getElementById("t_excl").textContent = fmt(tExcl);
+  document.getElementById("t_gst").textContent  = fmt(tGst);
+  document.getElementById("t_comm").textContent = fmt(tComm);
+
+  document.getElementById("sum_service").textContent = fmt(sService);
+  document.getElementById("sum_model").textContent   = fmt(sModel);
+  document.getElementById("sum_retail").textContent  = fmt(sRetail);
+  document.getElementById("sum_all_comm").textContent= fmt(tComm);
+}
+
+function addRow(preset={cat:"Service", incl:""}){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <select class="cat input">
+        <option value="Service"${preset.cat==="Service"?" selected":""}>Service</option>
+        <option value="Model"${preset.cat==="Model"?" selected":""}>Model</option>
+        <option value="Retail"${preset.cat==="Retail"?" selected":""}>Retail</option>
+      </select>
+    </td>
+    <td class="num"><input type="number" class="incl input" inputmode="decimal" step="0.01" value="${preset.incl}" placeholder="0.00"></td>
+    <td class="num excl">$0.00</td>
+    <td class="num gst">$0.00</td>
+    <td class="center rate">-</td>
+    <td class="num comm">$0.00</td>
+    <td class="center"><button class="del">削除</button></td>
+  `;
+  tblBody.appendChild(tr);
+
+  tr.querySelector(".incl").addEventListener("input", () => recalcRow(tr));
+  tr.querySelector(".cat").addEventListener("change", () => recalcRow(tr));
+  tr.querySelector(".del").addEventListener("click", () => { tr.remove(); recalcTotals(); saveState(); });
+
+  recalcRow(tr);
+}
+
+function saveState(){
+  const rows = [];
+  tblBody.querySelectorAll("tr").forEach(tr => {
+    rows.push({
+      cat: tr.querySelector(".cat").value,
+      incl: tr.querySelector(".incl").value
+    });
+  });
+  try{
+    localStorage.setItem(KEY, JSON.stringify(rows));
+    localStorage.setItem(KEY_GST, String(gstInput.value||"15"));
+  }catch(e){}
+}
+
+function restoreState(){
+  try{
+    const savedGST = localStorage.getItem(KEY_GST);
+    if (savedGST) gstInput.value = savedGST;
+    const rows = JSON.parse(localStorage.getItem(KEY) || "[]");
+    if (rows.length){
+      rows.forEach(r => addRow({cat:r.cat, incl:r.incl}));
+      return;
+    }
+  }catch(e){}
+  addRow(); // default one
+}
+
+function toCSV(){
+  const lines = [["Category","Incl GST","Excl GST","GST","Rate","Commission"]];
+  tblBody.querySelectorAll("tr").forEach(tr => {
+    lines.push([
+      tr.querySelector(".cat").value,
+      tr.querySelector(".incl").value || "0",
+      numFromText(tr.querySelector(".excl").textContent).toFixed(2),
+      numFromText(tr.querySelector(".gst").textContent).toFixed(2),
+      tr.querySelector(".rate").textContent,
+      numFromText(tr.querySelector(".comm").textContent).toFixed(2)
+    ]);
+  });
+  const csv = lines.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "gst_commission_export.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("add").addEventListener("click", () => addRow());
+document.getElementById("sample").addEventListener("click", () => {
+  tblBody.innerHTML = "";
+  addRow({cat:"Service", incl:"200"});
+  addRow({cat:"Model", incl:"150"});
+  addRow({cat:"Retail", incl:"80"});
+});
+document.getElementById("clear").addEventListener("click", () => {
+  tblBody.innerHTML = "";
+  addRow();
+  recalcTotals();
+  saveState();
+});
+document.getElementById("export").addEventListener("click", toCSV);
+gstInput.addEventListener("input", () => {
+  tblBody.querySelectorAll("tr").forEach(recalcRow);
+  saveState();
+});
+
+// Init
+restoreState();
+recalcTotals();
+</script>
+</body>
+</html>
